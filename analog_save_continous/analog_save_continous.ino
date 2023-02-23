@@ -5,6 +5,7 @@
 
 #define DEBUG true
 #define BUTTON_PIN 33
+#define 
 
 File myFile;
 
@@ -22,17 +23,17 @@ unsigned long endTime;
 uint16_t inValue;
 
 unsigned long startTime = 0;
+unsigned long startTimeNanos = 0;
 bool recording = false;
 bool doneRecording = false;
 EXTMEM uint16_t data[numReads] = { 0 };
 EXTMEM uint16_t times[numReads] = { 0 };
+EXTMEM bool outStates[numReads] = { 0 };
 
 // elapsedMicros sinceRecord;
 unsigned long deltaTime = 0;
 
 unsigned int longestTime = 0;
-
-int numLongReads = 0;
 
 // temporary string to store a single line
 String tempStr;
@@ -94,62 +95,58 @@ void loop() {
       Serial.println("Starting measurements");
     }
     startTime = micros();
+    startTimeNanos = nanos();
     recording = true;
     doneRecording = false;
     currentReads = 0;
     lastTime = nanos();
-    numLongReads = 0;
+    adc->adc0->enableInterrupts(adc0_isr);
+    adc->adc0->startContinuous(readPin);
   }
 
-  // if recording and it has been a microsecond
-  deltaTime = nanos() - lastTime;
-  if (recording && deltaTime > 1000) {
-    if (deltaTime > longestTime) {
-      longestTime = deltaTime;
+  if (doneRecording) {
+    endTime = micros();
+    if (DEBUG) {
+      Serial.println("Ending measurements");
     }
-    if (deltaTime > 1250) {
-      numLongReads++;
+    recording = false;
+    doneRecording = true;
+
+    String fileName = "test1.csv";
+    int fileIter = 1;
+    while(SD.exists(fileName.c_str())) {
+      fileIter++;
+      fileName = "test" + String(fileIter) + ".csv";
     }
-    lastTime = nanos();
-    data[currentReads] = adc->adc0->analogRead(readPin);
-    // inValue = adc->adc0->analogRead(readPin);
-    currentReads++;
-    if (currentReads >= numReads) {
-      endTime = micros();
-      if (DEBUG) {
-        Serial.println("Ending measurements");
-      }
-      recording = false;
-      doneRecording = true;
 
-      String fileName = "test1.csv";
-      int fileIter = 1;
-      while(SD.exists(fileName.c_str())) {
-        fileIter++;
-        fileName = "test" + String(fileIter) + ".csv";
-      }
+    myFile = SD.open(fileName.c_str(), FILE_WRITE);
+    // iterate through data array to save to sd card
+    for (unsigned long i = 0; i < numReads; i++) {
+      tempStr = String(times[i]) + ',' + String(outStates[i]) + ',' + String(data[i]);
+      myFile.println(tempStr);
+    }
+    myFile.print("total time (us): ");
+    myFile.println(endTime - startTime);
+    myFile.print("Longest measure time: ");
+    myFile.println(longestTime);
+    myFile.close();
+    if(DEBUG) {
+      Serial.print("Wrote to: ");
+      Serial.println(fileName);
+      Serial.print("Total measure time: ");
+      Serial.println(endTime - startTime);
+      Serial.print("Longest measure time: ");
+      Serial.println(longestTime);
+      Serial.print("Number of long cycles: ");
+      Serial.println(numLongReads);
+    }
+    doneRecording = false;    
+  }
 
-      myFile = SD.open(fileName.c_str(), FILE_WRITE);
-      // iterate through data array to save to sd card
-      for (unsigned long i = 0; i < numReads; i++) {
-        tempStr = String(i) + ',' + String(data[i]);
-        myFile.println(tempStr);
-      }
-      myFile.print("total time (us): ");
-      myFile.println(endTime - startTime);
-      myFile.print("Longest measure time: ");
-      myFile.println(longestTime);
-      myFile.close();
-      if(DEBUG) {
-        Serial.print("Wrote to: ");
-        Serial.println(fileName);
-        Serial.print("Total measure time: ");
-        Serial.println(endTime - startTime);
-        Serial.print("Longest measure time: ");
-        Serial.println(longestTime);
-        Serial.print("Number of long cycles: ");
-        Serial.println(numLongReads);
-      }
+  if (adc->adc0->fail_flag != ADC_ERROR::CLEAR) {
+    if(DEBUG) {
+      Serial.print("ADC: ");
+      Serial.println(getStringADCError(adc->adc0->fail_flag));
     }
   }
 }
@@ -158,13 +155,13 @@ void loop() {
 void adc0_isr(void) {
   // digitalWriteFast(LED_BUILTIN, HIGH);
   data[currentReads] = (uint16_t)adc->adc0->analogReadContinuous();
+  times[currentReads] = nanos() - startTime;
+  outStates[currentReads] = digitalRead(DIGITAL_IN_PIN);
   currentReads++;
   // Serial.println(currentReads);
   if (currentReads >= numReads) {
-    Serial.println("stopping");
-    // noInterrupts();
     adc->adc0->stopContinuous();
     adc->adc0->disableInterrupts();
-    doneReading = true;
+    doneRecording = true;
   }
 }
