@@ -3,8 +3,12 @@
 #include <SPI.h>
 #include <SD.h>
 
+
 #define DEBUG true
 #define BUTTON_PIN 33
+
+#define OUTPUT_PIN 0
+#define DUTY_CYCLE 127
 
 File myFile;
 
@@ -25,6 +29,8 @@ unsigned long startTime = 0;
 bool recording = false;
 bool doneRecording = false;
 EXTMEM uint16_t data[numReads] = { 0 };
+EXTMEM uint32_t times[numReads] = { 0 };
+EXTMEM bool outStates[numReads] = { 0 };
 
 // elapsedMicros sinceRecord;
 unsigned long deltaTime = 0;
@@ -40,8 +46,11 @@ uint32_t nanos() {
   return 1.667 * ARM_DWT_CYCCNT;
 }
 
+
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(OUTPUT_PIN, OUTPUT);
+  analogWrite(OUTPUT_PIN, DUTY_CYCLE);
 
   if(DEBUG) {
     while(!Serial){}
@@ -52,8 +61,6 @@ void setup() {
 
   adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
   adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
-
-  adc->adc0->startContinuous(uint8_t pin)
 
 
   digitalWrite(LED_BUILTIN, HIGH);
@@ -111,6 +118,8 @@ void loop() {
     }
     lastTime = nanos();
     data[currentReads] = adc->adc0->analogRead(readPin);
+    times[currentReads] = nanos();
+    outStates[currentReads] = digitalRead(OUTPUT_PIN);
     // inValue = adc->adc0->analogRead(readPin);
     currentReads++;
     if (currentReads >= numReads) {
@@ -131,7 +140,7 @@ void loop() {
       myFile = SD.open(fileName.c_str(), FILE_WRITE);
       // iterate through data array to save to sd card
       for (unsigned long i = 0; i < numReads; i++) {
-        tempStr = String(i) + ',' + String(data[i]);
+        tempStr = String(times[i]) + ',' + String(outStates[i]) + ',' + String(data[i]);
         myFile.println(tempStr);
       }
       myFile.print("total time (us): ");
