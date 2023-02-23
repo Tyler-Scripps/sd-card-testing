@@ -5,7 +5,7 @@
 
 #define DEBUG true
 #define BUTTON_PIN 33
-#define 
+#define DIGITAL_IN_PIN
 
 File myFile;
 
@@ -110,8 +110,6 @@ void loop() {
       Serial.println("Ending measurements");
     }
     recording = false;
-    doneRecording = true;
-
     String fileName = "test1.csv";
     int fileIter = 1;
     while(SD.exists(fileName.c_str())) {
