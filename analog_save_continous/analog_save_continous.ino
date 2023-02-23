@@ -35,8 +35,6 @@ EXTMEM bool outStates[numReads] = { 0 };
 // elapsedMicros sinceRecord;
 unsigned long deltaTime = 0;
 
-unsigned int longestTime = 0;
-
 // temporary string to store a single line
 String tempStr;
 
@@ -129,16 +127,12 @@ void loop() {
     }
     myFile.print("total time (us): ");
     myFile.println(endTime - startTime);
-    myFile.print("Longest measure time: ");
-    myFile.println(longestTime);
     myFile.close();
     if(DEBUG) {
       Serial.print("Wrote to: ");
       Serial.println(fileName);
       Serial.print("Total measure time: ");
       Serial.println(endTime - startTime);
-      Serial.print("Longest measure time: ");
-      Serial.println(longestTime);
     }
     doneRecording = false;    
   }
