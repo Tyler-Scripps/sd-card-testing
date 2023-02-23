@@ -5,7 +5,9 @@
 
 #define DEBUG true
 #define BUTTON_PIN 33
-#define DIGITAL_IN_PIN
+#define DIGITAL_IN_PIN 1
+#define PWM_OUT_PIN 0
+#define DUTY_CYCLE 127
 
 File myFile;
 
@@ -55,7 +57,7 @@ void setup() {
   adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
   adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
 
-  adc->adc0->startContinuous(uint8_t pin)
+  adc->adc0->startContinuous(readPin);
 
 
   digitalWrite(LED_BUILTIN, HIGH);
@@ -94,6 +96,7 @@ void loop() {
     if (DEBUG) {
       Serial.println("Starting measurements");
     }
+    analogWrite(PWM_OUT_PIN, DUTY_CYCLE);
     startTime = micros();
     startTimeNanos = nanos();
     recording = true;
@@ -104,11 +107,12 @@ void loop() {
     adc->adc0->startContinuous(readPin);
   }
 
-  if (doneRecording) {
+  if (doneRecording) {    
     endTime = micros();
     if (DEBUG) {
       Serial.println("Ending measurements");
     }
+    analogWrite(PWM_OUT_PIN, 0);
     recording = false;
     String fileName = "test1.csv";
     int fileIter = 1;
@@ -135,8 +139,6 @@ void loop() {
       Serial.println(endTime - startTime);
       Serial.print("Longest measure time: ");
       Serial.println(longestTime);
-      Serial.print("Number of long cycles: ");
-      Serial.println(numLongReads);
     }
     doneRecording = false;    
   }
