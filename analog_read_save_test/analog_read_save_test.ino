@@ -128,7 +128,7 @@ void loop() {
     currentReads++;
     if (currentReads >= numReads) {
       endTime = micros();
-      analogWrite(OUTPUT_PIN, DUTY_CYCLE);
+      analogWrite(OUTPUT_PIN, 0);
       if (DEBUG) {
         Serial.println("Ending measurements");
       }
