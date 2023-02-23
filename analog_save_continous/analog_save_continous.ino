@@ -25,6 +25,7 @@ unsigned long startTime = 0;
 bool recording = false;
 bool doneRecording = false;
 EXTMEM uint16_t data[numReads] = { 0 };
+EXTMEM uint16_t times[numReads] = { 0 };
 
 // elapsedMicros sinceRecord;
 unsigned long deltaTime = 0;
@@ -150,5 +151,20 @@ void loop() {
         Serial.println(numLongReads);
       }
     }
+  }
+}
+
+
+void adc0_isr(void) {
+  // digitalWriteFast(LED_BUILTIN, HIGH);
+  data[currentReads] = (uint16_t)adc->adc0->analogReadContinuous();
+  currentReads++;
+  // Serial.println(currentReads);
+  if (currentReads >= numReads) {
+    Serial.println("stopping");
+    // noInterrupts();
+    adc->adc0->stopContinuous();
+    adc->adc0->disableInterrupts();
+    doneReading = true;
   }
 }

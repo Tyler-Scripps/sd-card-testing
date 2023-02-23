@@ -12,11 +12,12 @@
 const int readPin = A0; // ADC0
 ADC *adc = new ADC(); // adc object
 
-uint16_t analogValue;
-const unsigned long numReads = 5;
+volatile uint16_t analogValue;
+const unsigned long numReads = 500;
 volatile unsigned long currentReads = 0;
 unsigned long startTime = 0;
 unsigned long endTime = 0;
+volatile bool doneReading = false;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -28,20 +29,16 @@ void setup() {
   }
   Serial.println("continuous read test");
 
-  ///// ADC0 ////
-  // reference can be ADC_REFERENCE::REF_3V3, ADC_REFERENCE::REF_1V2 (not for Teensy LC) or ADC_REFERENCE::REF_EXT.
-  //adc->adc0->setReference(ADC_REFERENCE::REF_1V2); // change all 3.3 to 1.2 if you change the reference to 1V2
-
-  adc->adc0->setAveraging(16); // set number of averages
+  adc->adc0->setAveraging(0); // set number of averages
   adc->adc0->setResolution(16); // set bits of resolution
 
   // it can be any of the ADC_CONVERSION_SPEED enum: VERY_LOW_SPEED, LOW_SPEED, MED_SPEED, HIGH_SPEED_16BITS, HIGH_SPEED or VERY_HIGH_SPEED
   // see the documentation for more information
   // additionally the conversion speed can also be ADACK_2_4, ADACK_4_0, ADACK_5_2 and ADACK_6_2,
   // where the numbers are the frequency of the ADC clock in MHz and are independent on the bus speed.
-  adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_LOW_SPEED); // change the conversion speed
+  adc->adc0->setConversionSpeed(ADC_CONVERSION_SPEED::VERY_HIGH_SPEED); // change the conversion speed
   // it can be any of the ADC_MED_SPEED enum: VERY_LOW_SPEED, LOW_SPEED, MED_SPEED, HIGH_SPEED or VERY_HIGH_SPEED
-  adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::MED_SPEED); // change the sampling speed
+  adc->adc0->setSamplingSpeed(ADC_SAMPLING_SPEED::VERY_HIGH_SPEED); // change the sampling speed
 
   // always call the compare functions after changing the resolution!
   // adc->adc0->enableCompare(1.0/3.3*adc->getMaxValue(), 0); // measurement will be ready if value < 1.0V
@@ -54,16 +51,17 @@ void setup() {
   digitalWriteFast(LED_BUILTIN, LOW);
   delay(500);
 
-  startTime = micros();
-  adc->adc0->startContinuous(readPin);
+  // startTime = micros();
+  // adc->adc0->startContinuous(readPin);
 }
 
 void loop() {
-  Serial.println("test");
-  Serial.println(currentReads);
   
-  if (currentReads >= numReads) {
-    noInterrupts();
+  if (doneReading) {
+    Serial.println("Done reading");
+    adc->adc0->stopContinuous();
+    adc->adc0->disableInterrupts();
+    // noInterrupts();
     endTime = micros();
 
     Serial.print("Time for ");
@@ -77,15 +75,18 @@ void loop() {
   if(adc->adc0->fail_flag != ADC_ERROR::CLEAR) {
     Serial.print("ADC0: "); Serial.println(getStringADCError(adc->adc0->fail_flag));
   }
-  delay(10);
-  digitalWriteFast(LED_BUILTIN, HIGH);
 }
 
 void adc0_isr(void) {
   // digitalWriteFast(LED_BUILTIN, HIGH);
   analogValue = (uint16_t)adc->adc0->analogReadContinuous();
   currentReads++;
+  // Serial.println(currentReads);
   if (currentReads >= numReads) {
+    Serial.println("stopping");
+    // noInterrupts();
     adc->adc0->stopContinuous();
+    adc->adc0->disableInterrupts();
+    doneReading = true;
   }
 }
