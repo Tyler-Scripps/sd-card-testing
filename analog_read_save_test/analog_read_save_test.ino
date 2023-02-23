@@ -26,6 +26,7 @@ unsigned long endTime;
 uint16_t inValue;
 
 unsigned long startTime = 0;
+unsigned long startTimeNanos = 0;
 bool recording = false;
 bool doneRecording = false;
 EXTMEM uint16_t data[numReads] = { 0 };
@@ -44,6 +45,14 @@ String tempStr;
 
 uint32_t nanos() {
   return 1.667 * ARM_DWT_CYCCNT;
+}
+
+int digitalReadOutputPin(uint8_t pin)
+{
+  uint8_t bit = digitalPinToBitMask(pin);
+  uint8_t port = digitalPinToPort(pin);
+
+  return (*portOutputRegister(port) & bit) ? HIGH : LOW;
 }
 
 
@@ -100,6 +109,7 @@ void loop() {
       Serial.println("Starting measurements");
     }
     startTime = micros();
+    startTimeNanos = nanos();
     recording = true;
     doneRecording = false;
     currentReads = 0;
@@ -118,8 +128,8 @@ void loop() {
     }
     lastTime = nanos();
     data[currentReads] = adc->adc0->analogRead(readPin);
-    times[currentReads] = nanos();
-    outStates[currentReads] = digitalRead(OUTPUT_PIN);
+    times[currentReads] = nanos() - startTimeNanos;
+    outStates[currentReads] = digitalReadOutputPin(OUTPUT_PIN);
     // inValue = adc->adc0->analogRead(readPin);
     currentReads++;
     if (currentReads >= numReads) {
