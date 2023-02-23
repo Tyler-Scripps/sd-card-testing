@@ -48,14 +48,6 @@ uint32_t nanos() {
   return 1.667 * ARM_DWT_CYCCNT;
 }
 
-int digitalReadOutputPin(uint8_t pin)
-{
-  uint8_t bit = digitalPinToBitMask(pin);
-  uint8_t port = digitalPinToPort(pin);
-
-  // return (*portOutputRegister(port) & bit) ? HIGH : LOW;
-}
-
 
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
