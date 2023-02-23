@@ -8,6 +8,7 @@
 #define BUTTON_PIN 33
 
 #define OUTPUT_PIN 0
+#define DIGITAL_IN_PIN 1
 #define DUTY_CYCLE 127
 
 File myFile;
@@ -52,7 +53,7 @@ int digitalReadOutputPin(uint8_t pin)
   uint8_t bit = digitalPinToBitMask(pin);
   uint8_t port = digitalPinToPort(pin);
 
-  return (*portOutputRegister(port) & bit) ? HIGH : LOW;
+  // return (*portOutputRegister(port) & bit) ? HIGH : LOW;
 }
 
 
@@ -129,7 +130,7 @@ void loop() {
     lastTime = nanos();
     data[currentReads] = adc->adc0->analogRead(readPin);
     times[currentReads] = nanos() - startTimeNanos;
-    outStates[currentReads] = digitalReadOutputPin(OUTPUT_PIN);
+    outStates[currentReads] = digitalRead(DIGITAL_IN_PIN);
     // inValue = adc->adc0->analogRead(readPin);
     currentReads++;
     if (currentReads >= numReads) {
