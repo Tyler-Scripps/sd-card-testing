@@ -60,7 +60,7 @@ int digitalReadOutputPin(uint8_t pin)
 void setup() {
   pinMode(BUTTON_PIN, INPUT_PULLUP);
   pinMode(OUTPUT_PIN, OUTPUT);
-  analogWrite(OUTPUT_PIN, DUTY_CYCLE);
+  // analogWrite(OUTPUT_PIN, DUTY_CYCLE);
 
   if(DEBUG) {
     while(!Serial){}
@@ -109,6 +109,7 @@ void loop() {
     if (DEBUG) {
       Serial.println("Starting measurements");
     }
+    analogWrite(OUTPUT_PIN, DUTY_CYCLE);
     startTime = micros();
     startTimeNanos = nanos();
     recording = true;
@@ -135,6 +136,7 @@ void loop() {
     currentReads++;
     if (currentReads >= numReads) {
       endTime = micros();
+      analogWrite(OUTPUT_PIN, DUTY_CYCLE);
       if (DEBUG) {
         Serial.println("Ending measurements");
       }
